@@ -10,5 +10,8 @@ COPY ./target/haringtontraining-0.0.1-SNAPSHOT.jar /app/haringtontraining-0.0.1-
 # Exposez le port si votre application utilise un port spécifique
 EXPOSE 8080
 
+# Ajoutez l'utilisateur Jenkins au groupe Docker
+RUN usermod -aG docker jenkins
+
 # Commande pour exécuter l'application lors du démarrage du conteneur
 RUN ["java", "-jar", "haringtontraining-0.0.1-SNAPSHOT.jar"]
