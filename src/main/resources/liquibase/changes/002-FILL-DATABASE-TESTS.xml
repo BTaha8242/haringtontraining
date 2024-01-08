@@ -1,0 +1,39 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd">
+
+
+    <changeSet id="fillTableUser" author="TB" context="test">
+        <sql>
+            -- Insérer des données dans la table t_user
+            INSERT INTO t_user (id, first_name, last_name, role, email, password)
+            VALUES (1, 'John', 'Doe', 'ADMIN', 'john.doe@example.com', 'password123'),
+                   -- Ajoutez d'autres lignes d'insertion si nécessaire
+                   (2, 'Jane', 'Smith', 'CLIENT', 'jane.smith@example.com', 'securepass');
+
+        </sql>
+    </changeSet>
+
+    <changeSet id="fillTableAccount" author="TB" context="test">
+        <sql>
+            -- Insérer des données dans la table t_account
+            INSERT INTO t_account (id, balance, user_id)
+            VALUES (1, 1000.00, 1),
+                   (2, 500.00, 2);
+
+        </sql>
+    </changeSet>
+
+    <changeSet id="fillTableOperation" author="TB" context="test">
+        <sql>
+            -- Insérer des données dans la table t_account
+            INSERT INTO t_operation (id,operation_type, amount, account_id)
+            VALUES (1,'DEPOSIT', 5.00, 1),
+                   (2,'WITHDRAWAL', 50.00, 2);
+
+        </sql>
+    </changeSet>
+
+
+</databaseChangeLog>
