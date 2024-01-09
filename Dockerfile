@@ -1,10 +1,6 @@
 # Utilisez une image OpenJDK 17 comme base
 FROM openjdk:17-oracle
 
-USER root
-RUN chmod 777 /var/run/docker.sock
-USER jenkins
-
 # Définissez le répertoire de travail dans l'image
 WORKDIR /app
 
