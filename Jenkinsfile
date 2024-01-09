@@ -24,7 +24,9 @@ pipeline {
             steps {
         script {
             // Exécutez votre commande Docker build
-            sh 'docker build -t haringtontraining/Dockerfile'
+            docker.build('my-build-image').inside("--volume=/var/run/docker.sock:/var/run/docker.sock") {
+               // The build here
+            }
         }
             }
         }
