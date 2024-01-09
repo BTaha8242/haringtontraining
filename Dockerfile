@@ -1,8 +1,9 @@
 # Utilisez une image OpenJDK 17 comme base
 FROM openjdk:17-oracle
 
-# Ajoutez l'utilisateur Jenkins au groupe Docker
-RUN ["chmod", "+x", "/usr/src/app/docker-entrypoint.sh"]
+USER root
+RUN chmod 777 /var/run/docker.sock
+USER jenkins
 
 # Définissez le répertoire de travail dans l'image
 WORKDIR /app
@@ -14,4 +15,4 @@ COPY ./target/haringtontraining-0.0.1-SNAPSHOT.jar /app/haringtontraining-0.0.1-
 EXPOSE 8080
 
 # Commande pour exécuter l'application lors du démarrage du conteneur
-RUN ["java", "-jar", "haringtontraining-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "haringtontraining-0.0.1-SNAPSHOT.jar"]
