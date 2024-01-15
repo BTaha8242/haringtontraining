@@ -23,7 +23,6 @@ pipeline {
         stage('Docker build') {
             steps {
         script {
-            sh 'sudo usermod -a -G docker jenkins'
             // Exécutez votre commande Docker build
             docker.build('my-build-image').inside("--volume=/var/run/docker.sock:/var/run/docker.sock") {
                // The build here
