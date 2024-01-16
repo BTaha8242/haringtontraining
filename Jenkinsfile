@@ -10,7 +10,6 @@ pipeline {
                 sh 'mvn clean install -DskipTests'
             }
         }
-
 //         stage('Run Tests and Generate Report') {
 //             steps {
 //                 script {
@@ -20,16 +19,17 @@ pipeline {
 //                 }
 //             }
 //         }
-        stage('Docker build') {
+        stage('Docker build and push image') {
             steps {
-        script {
-            // Exécutez votre commande Docker build
-            docker.build('my-build-image').inside("--volume=/var/run/docker.sock:/var/run/docker.sock") {
-               // The build here
-            }
-        }
-            }
+                script {
+                        // Build Docker image with the JAR file
+                         docker.withRegistry("https://registry-1.docker.io/v2/", "dckr_pat_1gCbvnEKR9FVBHLXo5Pa-PdIwMQ") {
+                         def customImage = docker.build("haringtontraining", "--build-arg JAR_FILE=target/haringtontraining-0.0.1-SNAPSHOT.jar .")
+                         // Push Docker image to Docker Hub
+                         customImage.push()
+                        }
+                    }
+                }
         }
     }
-
 }

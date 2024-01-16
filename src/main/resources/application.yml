@@ -27,7 +27,9 @@ springfox:
     swagger:
       v2:
         enabled: 'true'
-
+rsa:
+  public-key: classpath:certs/public.pem
+  private-key: classpath:certs/private.pem
 
 ---
 
