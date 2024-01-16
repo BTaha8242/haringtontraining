@@ -23,8 +23,8 @@ pipeline {
             steps {
                 script {
                         // Build Docker image with the JAR file
-                         docker.withRegistry("", "docker-hub-credentials") {
-                         def customImage = docker.build("waelbenammara/haringtontraining:tag", "--build-arg JAR_FILE=target/haringtontraining-0.0.1-SNAPSHOT.jar .")
+                         customImage = docker.build('waelbenammara/haringtontraining:tag', '--build-arg JAR_FILE=target/haringtontraining-0.0.1-SNAPSHOT.jar .')
+                         docker.withRegistry('', 'docker-hub-credentials') {
                          // Push Docker image to Docker Hub
                          customImage.push()
                         }
