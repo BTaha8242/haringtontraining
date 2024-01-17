@@ -21,7 +21,6 @@ pipeline {
 //         }
         stage('Docker build image') {
             steps {
-                script {
                         // Build Docker image with the JAR file
                           sh 'docker build -t user/haringtontraining-0.0.1-SNAPSHOT .'
                          // docker.withRegistry('', 'docker-hub-credentials') {
@@ -29,7 +28,6 @@ pipeline {
                          // // Push Docker image to Docker Hub
                          // customImage.push()
                          // }
-                    }
                 }
         }
     }
