@@ -23,12 +23,12 @@ pipeline {
             steps {
                   script {
                         // Build Docker image with the JAR file
-                          sh 'docker build -t user/haringtontraining-0.0.1-SNAPSHOT .'
-                         // docker.withRegistry('', 'docker-hub-credentials') {
-                         // customImage = docker.build('waelbenammara/haringtontraining:tag', '--build-arg JAR_FILE=target/haringtontraining-0.0.1-SNAPSHOT.jar .')
-                         // // Push Docker image to Docker Hub
-                         // customImage.push()
-                         // }
+                         // sh 'docker build -t user/haringtontraining-0.0.1-SNAPSHOT .'
+                         docker.withRegistry('', 'docker-hub-credentials') {
+                         customImage = docker.build('waelbenammara/haringtontraining:tag', '--build-arg JAR_FILE=target/haringtontraining-0.0.1-SNAPSHOT.jar .')
+                         // Push Docker image to Docker Hub
+                         customImage.push()
+                         }
                        }
                 }
         }
