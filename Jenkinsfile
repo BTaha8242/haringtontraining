@@ -28,7 +28,7 @@ pipeline {
                          // customImage = docker.build('waelbenammara/haringtontraining:tag', '--build-arg JAR_FILE=target/haringtontraining-0.0.1-SNAPSHOT.jar .')
                          // // Push Docker image to Docker Hub
                          // customImage.push()
-                        }
+                         // }
                     }
                 }
         }
