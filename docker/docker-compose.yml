@@ -29,19 +29,16 @@ services:
     networks:
       - mynetwork
   jenkins:
-    image: jenkins/jenkins:lts
+    build:
+      dockerfile: DockerFile
     container_name: jenkins
+    user: root
     ports:
       - "9090:8080"  # Change the host port to 9090
-     # - "9090:8080"  # Change the host port to 9090
-    volumes:
-      - ~/jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/local/bin/docker:/usr/local/bin/docker
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-      - /var/run:/var/run:rw
     networks:
       - mynetwork
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 networks:
   mynetwork:
     driver: bridge
