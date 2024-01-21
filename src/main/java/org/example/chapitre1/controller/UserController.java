@@ -1,54 +1,58 @@
 package org.example.chapitre1.controller;
 
 
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.chapitre1.dto.UserDto;
 import org.example.chapitre1.exception.UserNotFoundException;
 import org.example.chapitre1.service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserController {
 
-
-
     private final UserService userService;
 
-    @RequestMapping(value = "", method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<List<UserDto>> findAll() {
-        List<UserDto> usersDto = userService.findAll();
-        HttpStatus status = (usersDto != null) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE;
-        return new ResponseEntity<>(usersDto, status);
-    }
-
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserDto> findById(@PathVariable Long id) throws UserNotFoundException {
-        UserDto userDto = userService.findById(id);
-        HttpStatus status = (userDto != null) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE;
-        return new ResponseEntity<>(userDto, status);
-    }
-
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Object> deleteById(@PathVariable Long id) throws UserNotFoundException {
-        userService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-
-    @RequestMapping(value = "", method = RequestMethod.POST)
+    @ApiOperation("create new user")
+    @PostMapping(path = "/v1/users")
     public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto) {
+        log.info("create new user");
         UserDto userSaved = userService.save(userDto);
-        HttpStatus status = (userSaved != null) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE;
-        return new ResponseEntity<>(userSaved, status);
+        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path("/api/v1/users/{id}").build().expand(userSaved.getId()).toUri();
+        return ResponseEntity.created(location).body(userSaved);
     }
+
+    @ApiOperation("get all users")
+    @GetMapping(path = "/v1/users")
+    public ResponseEntity<List<UserDto>> findAll() {
+        log.info("get all users");
+        List<UserDto> usersDto = userService.findAll();
+        return ResponseEntity.ok().body(usersDto);
+    }
+
+    @ApiOperation("get user by id")
+    @GetMapping(path = "/v1/users/{id}")
+    public ResponseEntity<UserDto> findById(@PathVariable Long id) throws UserNotFoundException {
+        log.info("get user by id : {} ", id);
+        UserDto userDto = userService.findById(id);
+        return ResponseEntity.ok().body(userDto);
+    }
+
+    @ApiOperation("delete user by id")
+    @DeleteMapping(path = "/v1/users/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Long id) throws UserNotFoundException {
+        userService.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
 
 }

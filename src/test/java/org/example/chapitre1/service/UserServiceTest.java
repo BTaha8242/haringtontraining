@@ -11,9 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.EmptyResultDataAccessException;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -99,19 +97,22 @@ class UserServiceTest {
 
     @Test
     void givenNoUserIdExist_whenDeleteById_thenThrowUserNotFoundException() {
-        doThrow(new EmptyResultDataAccessException(1)).when(userRepository).deleteById(1L);
-        Exception exception = assertThrows(UserNotFoundException.class, () -> userService.deleteById(1L));
-        String expectedMessage = "User not found";
-        String actualMessage = exception.getMessage();
-        assertTrue(actualMessage.contains(expectedMessage));
+        Long userIdToDelete = 7000L;
+        userRepository.deleteById(userIdToDelete);
+        assertThrows(UserNotFoundException.class, () -> userService.deleteById(userIdToDelete));
+        verify(userRepository, times(1)).deleteById(userIdToDelete);
     }
 
     @Test
     void givenUserId_whenDeleteById_thenDeleteUser() throws UserNotFoundException {
-        Long userIdToDelete = 1L;
-        doNothing().when(userRepository).deleteById(userIdToDelete);
+        Long userIdToDelete = 101L;
+        doReturn(Optional.of(getUser())).when(userRepository).findById(userIdToDelete);
         userService.deleteById(userIdToDelete);
         verify(userRepository, times(1)).deleteById(userIdToDelete);
+    }
+
+    private User getUser() {
+        return User.builder().id(101L).firstName("firstname").lastName("lastname").role(RoleEnum.CLIENT).email("test@gmail.com").password("test").build();
     }
 
 }

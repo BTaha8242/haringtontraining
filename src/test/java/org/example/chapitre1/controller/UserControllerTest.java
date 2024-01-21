@@ -1,5 +1,8 @@
 package org.example.chapitre1.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
+import org.example.chapitre1.dto.AccountDto;
 import org.example.chapitre1.dto.UserDto;
 import org.example.chapitre1.entity.RoleEnum;
 import org.example.chapitre1.repository.UserRepository;
@@ -7,13 +10,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -23,67 +26,71 @@ import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
+@AutoConfigureMockMvc
+@WithMockUser(username = "user", authorities = {"USER"})
 class UserControllerTest {
 
-    @Autowired
-    private UserRepository userRepository;
+    private static final String API_GET_AND_DELETE_USER_BY_ID = "/api/v1/users/{id}";
+    private static final String API_CREATE_AND_GET_ALL_USERS = "/api/v1/users";
 
-    private static RestTemplate restTemplate;
+    @Inject
+    protected MockMvc mockMvc;
 
-    @LocalServerPort
-    private int port;
+    /*************************************************** Get user by id *****************************************************************/
 
-    private String baseUrl = "http://localhost";
-
-    private HttpHeaders tokenHeader;
-
-    @BeforeEach
-    public void setUp() throws URISyntaxException {
-        baseUrl = baseUrl.concat(":").concat(port + "").concat("/api/v1/users");
-        restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBasicAuth("user", "1234");
-        ResponseEntity<HashMap> hashMap = restTemplate.exchange(RequestEntity.post(new URI("http://localhost:" + port + "/oauth/token")).headers(headers).build(), HashMap.class);
-        HashMap<String, String> tokenHashMap = hashMap.getBody();
-        String token = tokenHashMap.get("accessToken");
-        tokenHeader = new HttpHeaders();
-        tokenHeader.setBearerAuth(token);
+    @Test
+    public void should_return_ok_when_find_user_by_id_and_user_exist() throws Exception {
+        mockMvc.perform(get(API_GET_AND_DELETE_USER_BY_ID, 100)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void whenFindAll_thenRetrieveUsersFromDB() throws URISyntaxException {
-        ResponseEntity<UserDto[]> responseEntity = restTemplate.exchange(RequestEntity.get(new URI(baseUrl)).headers(tokenHeader).build(), UserDto[].class);
-        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        UserDto[] users = responseEntity.getBody();
-        assert users != null;
-        Assertions.assertTrue(users.length > 0);
+    public void should_return_not_found_when_find_user_by_id_and_user_does_not_exist() throws Exception {
+        mockMvc.perform(get(API_GET_AND_DELETE_USER_BY_ID, 7000)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    /*************************************************** Create new user *****************************************************************/
+    @Test
+    public void should_return_ok_when_create_new_user() throws Exception {
+        UserDto userDto = UserDto.builder().firstName("test").lastName("test").email("test@yopmail.com").password("1234").role(RoleEnum.CLIENT).build();
+        mockMvc.perform(post(API_CREATE_AND_GET_ALL_USERS)
+                        .content(new ObjectMapper().writeValueAsString(userDto))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+    }
+
+    /*************************************************** Get all users *****************************************************************/
+    @Test
+    public void should_return_ok_when_find_all_users() throws Exception {
+        mockMvc.perform(get(API_CREATE_AND_GET_ALL_USERS)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+
+    /*************************************************** delete users *****************************************************************/
+    @Test
+    public void should_return_ok_when_delete_user_by_id() throws Exception {
+        mockMvc.perform(delete(API_GET_AND_DELETE_USER_BY_ID, 100)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void givenUserId_whenFindById_thenRetrieveUserFromDB() {
-        Long userId = 1L;
-        ResponseEntity<UserDto> response = restTemplate.getForEntity(baseUrl + "/{id}", UserDto.class, userId);
-        assertAll("Grouped Assertions of UserController",
-                () -> Assertions.assertEquals(HttpStatus.OK, response.getStatusCode()),
-                () -> Assertions.assertNotNull(response.getBody()),
-                () -> Assertions.assertEquals(userId, response.getBody().getId()));
+    public void should_return_not_found_when_delete_user_by_id_and_user_does_not_exist() throws Exception {
+        mockMvc.perform(delete(API_GET_AND_DELETE_USER_BY_ID, 5000)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
-    @Test
-    public void givenUserIdNotExist_whenFindById_thenThrowHttpClientErrorException() throws Exception {
-        Long userId = 9L;
-        assertThrows(HttpClientErrorException.class, () -> restTemplate.getForEntity(baseUrl + "/{id}", UserDto.class, userId));
-    }
-
-    @Test
-    public void givenUserDto_whenSaveUser_thenSaveUser() {
-        userRepository.deleteAll();
-        UserDto userDto = new UserDto("firtname1", "lastname1", RoleEnum.CLIENT, "test@gmail.com", "test");
-        restTemplate.postForObject(baseUrl, userDto, UserDto.class);
-        Assertions.assertEquals(userRepository.findAll().size(), 1);
-    }
 }

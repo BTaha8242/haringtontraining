@@ -10,7 +10,6 @@ import org.example.chapitre1.exception.AccountNotFoundException;
 import org.example.chapitre1.exception.OperationNotFoundException;
 import org.example.chapitre1.exception.UnsupportedOperationTypeException;
 import org.example.chapitre1.repository.OperationRepository;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,11 +49,8 @@ public class OperationService {
     }
 
     public void deleteById(Long id) throws OperationNotFoundException {
-        try {
-            operationRepository.deleteById(id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new OperationNotFoundException();
-        }
+        Operation operation = operationRepository.findById(id).orElseThrow(OperationNotFoundException::new);
+        operationRepository.deleteById(operation.getId());
     }
 
     private void processOperation(Operation operation) throws UnsupportedOperationTypeException {

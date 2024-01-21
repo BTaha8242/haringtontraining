@@ -6,7 +6,6 @@ import org.example.chapitre1.dto.mapper.UserMapper;
 import org.example.chapitre1.entity.User;
 import org.example.chapitre1.exception.UserNotFoundException;
 import org.example.chapitre1.repository.UserRepository;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,11 +29,8 @@ public class UserService {
     }
 
     public void deleteById(Long id) throws UserNotFoundException {
-        try {
-            userRepository.deleteById(id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException();
-        }
+        User user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+        userRepository.deleteById(user.getId());
     }
 
     public UserDto save(UserDto userDto) {

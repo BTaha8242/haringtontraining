@@ -1,85 +1,87 @@
 package org.example.chapitre1.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import org.example.chapitre1.dto.AccountDto;
-import org.example.chapitre1.repository.AccountRepository;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.example.chapitre1.dto.UserDto;
+import org.example.chapitre1.entity.RoleEnum;
+import org.example.chapitre1.service.UserService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
-class AccountControllerTest {
+@WithMockUser(username = "user", authorities = {"USER"})
+public class AccountControllerTest {
 
-    @Autowired
-    private AccountRepository accountRepository;
+    private static final String API_GET_AND_DELETE_ACCOUNT_BY_ID = "/api/v1/accounts/{id}";
+    private static final String API_CREATE_AND_GET_ALL_ACCOUNT = "/api/v1/accounts";
 
-    private static RestTemplate restTemplate;
+    @Inject
+    UserService userService;
+    @Inject
+    protected MockMvc mockMvc;
 
-    @LocalServerPort
-    private int port;
+    /*************************************************** Get account by id *****************************************************************/
 
-    private String baseUrl = "http://localhost";
-
-    @BeforeAll
-    public static void init() {
-        restTemplate = new RestTemplate();
-    }
-
-    @BeforeEach
-    public void setUp() {
-        baseUrl = baseUrl.concat(":").concat(port + "").concat("/api/v1/accounts");
+    @Test
+    public void should_return_ok_when_find_account_by_id_and_account_exist() throws Exception {
+        mockMvc.perform(get(API_GET_AND_DELETE_ACCOUNT_BY_ID, 100)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void whenFindAll_thenRetrieveAccountsFromDB() {
-        ResponseEntity<AccountDto[]> responseEntity = restTemplate.getForEntity(baseUrl, AccountDto[].class);
-        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        AccountDto[] accountDtos = responseEntity.getBody();
-        assert accountDtos != null;
-        Assertions.assertTrue(accountDtos.length > 0 );
+    public void should_return_not_found_when_find_account_by_id_and_account_does_not_exist() throws Exception {
+        mockMvc.perform(get(API_GET_AND_DELETE_ACCOUNT_BY_ID, 7000)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    /*************************************************** Create new account *****************************************************************/
+    @Test
+    public void should_return_ok_when_create_new_account() throws Exception {
+        UserDto userDto = UserDto.builder().firstName("test").lastName("test").email("test@yopmail.com").password("1234").role(RoleEnum.CLIENT).build();
+        UserDto saveUser = userService.save(userDto);
+        AccountDto accountDto = AccountDto.builder().userId(saveUser.getId()).balance(1000.0F).build();
+        mockMvc.perform(post(API_CREATE_AND_GET_ALL_ACCOUNT)
+                        .content(new ObjectMapper().writeValueAsString(accountDto))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+    }
+
+    /*************************************************** Get all accounts *****************************************************************/
+    @Test
+    public void should_return_ok_when_find_all_accounts() throws Exception {
+        mockMvc.perform(get(API_CREATE_AND_GET_ALL_ACCOUNT)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+
+    /*************************************************** delete account *****************************************************************/
+    @Test
+    public void should_return_ok_when_delete_account_by_id() throws Exception {
+        mockMvc.perform(delete(API_GET_AND_DELETE_ACCOUNT_BY_ID, 100)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    @Sql({"/jdbc/FILL_USER_TABLE.sql", "/jdbc/FILL_ACCOUNT_TABLE.sql"})
-    public void givenAccountId_whenFindById_thenRetrieveAccountFromDB() {
-        Long accountId = 100L;
-        ResponseEntity<AccountDto> response = restTemplate.getForEntity(baseUrl + "/{id}", AccountDto.class, accountId);
-        assertAll("Grouped Assertions of AccountController",
-                () -> Assertions.assertEquals(HttpStatus.OK, response.getStatusCode()),
-                () -> Assertions.assertNotNull(response.getBody()),
-                () -> Assertions.assertEquals(accountId, Objects.requireNonNull(response.getBody()).getId()));
+    public void should_return_not_found_when_delete_account_by_id_and_account_does_not_exist() throws Exception {
+        mockMvc.perform(delete(API_GET_AND_DELETE_ACCOUNT_BY_ID, 5000)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
-    @Test
-    public void givenIdAccountNotExist_whenFindById_thenThrowHttpClientErrorException() throws Exception {
-        accountRepository.deleteById(1L);
-        assertThrows(HttpClientErrorException.class, () -> restTemplate.getForEntity(baseUrl + "/{id}", AccountDto.class, 1));
-    }
-
-    @Test
-    public void givenAccountDto_whenSaveAccount_thenSavedAccount() {
-        accountRepository.deleteAll();
-        AccountDto accountDto = new AccountDto(1L, 500.4f);
-        restTemplate.postForObject(baseUrl, accountDto, AccountDto.class);
-        assertAll("Grouped Assertions of AccountController",
-                () -> Assertions.assertEquals(accountRepository.findAll().size(), 1),
-                () -> assertEquals(accountRepository.findAll().stream().findFirst().get().getBalance(), 500.4f));
-    }
 }

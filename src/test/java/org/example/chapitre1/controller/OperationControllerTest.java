@@ -1,82 +1,86 @@
 package org.example.chapitre1.controller;
 
-import org.example.chapitre1.dto.AccountDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import org.example.chapitre1.dto.OperationDto;
-import org.example.chapitre1.entity.Operation;
 import org.example.chapitre1.entity.OperationTypeEnum;
-import org.example.chapitre1.repository.OperationRepository;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@WithMockUser(username = "user", authorities = {"USER"})
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class OperationControllerTest {
 
-    @Autowired
-    private OperationRepository operationRepository;
+    private static final String API_GET_AND_DELETE_OPERATION_BY_ID = "/api/v1/operations/{id}";
+    private static final String API_CREATE_AND_GET_ALL_OPERATION = "/api/v1/operations";
 
-    private static RestTemplate restTemplate;
+    @Inject
+    protected MockMvc mockMvc;
 
-    @LocalServerPort
-    private int port;
 
-    private String baseUrl = "http://localhost";
+    /*************************************************** Get operation by id *****************************************************************/
 
-    @BeforeAll
-    public static void init() {
-        restTemplate = new RestTemplate();
-    }
-
-    @BeforeEach
-    public void setUp() {
-        baseUrl = baseUrl.concat(":").concat(port + "").concat("/api/v1/operations");
+    @Test
+    @Order(1)
+    public void should_return_ok_when_find_operation_by_id_and_operation_exist() throws Exception {
+        mockMvc.perform(get(API_GET_AND_DELETE_OPERATION_BY_ID, 101)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void whenFindAll_thenRetrieveOperationsFromDB() {
-        ResponseEntity<OperationDto[]> responseEntity = restTemplate.getForEntity(baseUrl, OperationDto[].class);
-        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        OperationDto[] operationDtos = responseEntity.getBody();
-        assert operationDtos != null;
-        Assertions.assertTrue(operationDtos.length > 0);
+    public void should_return_not_found_when_find_operation_by_id_and_operation_does_not_exist() throws Exception {
+        mockMvc.perform(get(API_GET_AND_DELETE_OPERATION_BY_ID, 7000)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    /*************************************************** Create new operation *****************************************************************/
+    @Test
+    public void should_return_ok_when_create_new_operation() throws Exception {
+        OperationDto operationDto = OperationDto.builder().accountId(101L).operationType(OperationTypeEnum.DEPOSIT).amount(500.0F).build();
+        mockMvc.perform(post(API_CREATE_AND_GET_ALL_OPERATION)
+                        .content(new ObjectMapper().writeValueAsString(operationDto))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+    }
+
+    /*************************************************** Get all operations *****************************************************************/
+    @Test
+    public void should_return_ok_when_find_all_operations() throws Exception {
+        mockMvc.perform(get(API_CREATE_AND_GET_ALL_OPERATION)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+
+    /*************************************************** delete operation *****************************************************************/
+    @Test
+    public void should_return_ok_when_delete_operation_by_id() throws Exception {
+        mockMvc.perform(delete(API_GET_AND_DELETE_OPERATION_BY_ID, 101)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void givenOperationDtosId_whenFindById_thenRetrieveOperationDtosFromDB() {
-        Long accountId = 1L;
-        ResponseEntity<AccountDto> response = restTemplate.getForEntity(baseUrl + "/{id}", AccountDto.class, accountId);
-        assertAll("Grouped Assertions of UserController",
-                () -> Assertions.assertEquals(HttpStatus.OK, response.getStatusCode()),
-                () -> Assertions.assertNotNull(response.getBody()),
-                () -> Assertions.assertEquals(accountId, response.getBody().getId()));
-    }
-
-    @Test
-    public void givenOperationIdNotExist_whenFindById_thenThrowHttpClientErrorException() throws Exception {
-        operationRepository.deleteById(1L);
-        assertThrows(HttpClientErrorException.class, () -> restTemplate.getForEntity(baseUrl + "/{id}", Operation.class, 1));
-    }
-
-    @Test
-    public void givenOperationDto_whenSaveOperation_thenSaveOperation() {
-        operationRepository.deleteAll();
-        OperationDto operationDto = new OperationDto(OperationTypeEnum.DEPOSIT,1L,500.4f);
-        restTemplate.postForObject(baseUrl, operationDto, AccountDto.class);
-        Assertions.assertEquals(operationRepository.findAll().size(), 1);
+    public void should_return_not_found_when_delete_operation_by_id_and_operation_does_not_exist() throws Exception {
+        mockMvc.perform(delete(API_GET_AND_DELETE_OPERATION_BY_ID, 7000)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 }

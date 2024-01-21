@@ -15,10 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.util.ArrayList;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,28 +127,29 @@ class AccountServiceTest {
     @Test
     void givenAccountDto_whenSave_thenThrowUserNotFoundException() throws UserNotFoundException {
         AccountDto accountDto = new AccountDto(1L, 1L, 50.0F);
-
         when(accountMapper.dtoToEntity(accountDto)).thenThrow(UserNotFoundException.class);
         assertThrows(UserNotFoundException.class, () -> accountService.save(accountDto));
     }
 
     @Test
     void givenAccountId_whenDeleteById_thenDeleteAccount() throws AccountNotFoundException {
-        Long accountIdToDelete = 1L;
-        doNothing().when(accountRepository).deleteById(accountIdToDelete);
+        Long accountIdToDelete = 101L;
+        doReturn(Optional.of(getAccount())).when(accountRepository).findById(accountIdToDelete);
         accountService.deleteById(accountIdToDelete);
         verify(accountRepository, times(1)).deleteById(accountIdToDelete);
     }
 
     @Test
     void givenAccountId_whenDeleteById_thenDeleteAccountThrowAccountNotFoundException() {
-        Long accountIdToDelete = 1L;
-        doThrow(EmptyResultDataAccessException.class).when(accountRepository).deleteById(accountIdToDelete);
-        Exception exception =assertThrows(AccountNotFoundException.class, () -> accountService.deleteById(accountIdToDelete));
-        String expectedMessage = "Account not found";
-        String actualMessage = exception.getMessage();
-        assertTrue(actualMessage.contains(expectedMessage));
+        Long accountIdToDelete = 7000L;
+        accountRepository.deleteById(accountIdToDelete);
+        assertThrows(AccountNotFoundException.class, () -> accountService.deleteById(accountIdToDelete));
         verify(accountRepository, times(1)).deleteById(accountIdToDelete);
+    }
+
+    private Account getAccount() {
+        User user = User.builder().id(1L).firstName("firstname").lastName("lastname").role(RoleEnum.CLIENT).email("test@gmail.com").password("test").build();
+        return new Account(101L, 50.0F, user, new ArrayList<>());
     }
 
 }

@@ -7,10 +7,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties(RsaKeysConfig.class)
-public class Chapitre1Application {
+public class HaringtonTrainingApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(Chapitre1Application.class, args);
+        SpringApplication.run(HaringtonTrainingApplication.class, args);
     }
 
 }

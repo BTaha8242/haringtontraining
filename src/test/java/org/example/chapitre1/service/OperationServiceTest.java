@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,17 +117,18 @@ class OperationServiceTest {
 
     @Test
     void givenOperationId_whenDeleteById_thenDeleteOperation() throws OperationNotFoundException {
-        Long operationIdToDelete = 1L;
-        doNothing().when(operationRepository).deleteById(operationIdToDelete);
+        Long operationIdToDelete = 100L;
+        doReturn(Optional.of(getOperation())).when(operationRepository).findById(operationIdToDelete);
         operationService.deleteById(operationIdToDelete);
         verify(operationRepository, times(1)).deleteById(operationIdToDelete);
     }
 
     @Test
     void givenNotExistOperationId_whenDeleteById_thenThrowOperationNotFoundException() {
-        Long accountIdToDelete = 1L;
-        doThrow(EmptyResultDataAccessException.class).when(operationRepository).deleteById(accountIdToDelete);
+        Long accountIdToDelete = 7000L;
+        operationRepository.deleteById(accountIdToDelete);
         assertThrows(OperationNotFoundException.class, () -> operationService.deleteById(accountIdToDelete));
+        verify(operationRepository, times(1)).deleteById(accountIdToDelete);
     }
 
     @Test
@@ -175,6 +175,12 @@ class OperationServiceTest {
         float result = account.getBalance() - operation.getAmount();
         Account accountWithdrawal = operationService.processWithdrawal(operation);
         assertEquals(accountWithdrawal.getBalance(), result);
+    }
+
+    private Operation getOperation() {
+        User user = User.builder().id(1L).firstName("firstname").lastName("lastname").role(RoleEnum.CLIENT).email("test@gmail.com").password("test").build();
+        Account account = Account.builder().id(1L).balance(50.0F).user(user).build();
+        return Operation.builder().id(100L).operationType(OperationTypeEnum.DEPOSIT).amount(500f).account(account).build();
     }
 
 

@@ -1,54 +1,59 @@
 package org.example.chapitre1.controller;
 
 
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.chapitre1.dto.OperationDto;
 import org.example.chapitre1.exception.AccountNotFoundException;
 import org.example.chapitre1.exception.OperationNotFoundException;
 import org.example.chapitre1.exception.UnsupportedOperationTypeException;
 import org.example.chapitre1.service.OperationService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
+@Slf4j
+@RequestMapping("/api")
 @RestController
-@RequestMapping("/api/v1/operations")
 @RequiredArgsConstructor
 public class OperationController {
 
     private final OperationService operationService;
 
-    @RequestMapping(value = "", method = RequestMethod.POST)
+    @ApiOperation("create new operation")
+    @PostMapping(path = "/v1/operations")
     public ResponseEntity<OperationDto> createOperation(@RequestBody OperationDto operationDto) throws AccountNotFoundException, UnsupportedOperationTypeException {
+        log.info("create new operation");
         OperationDto operationDtoSaved = operationService.save(operationDto);
-        HttpStatus status = (operationDtoSaved != null) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE;
-        return new ResponseEntity<>(operationDtoSaved, status);
-
+        final URI location = ServletUriComponentsBuilder.fromCurrentServletMapping().path("/api/v1/operations/{id}").build().expand(operationDtoSaved.getId()).toUri();
+        return ResponseEntity.created(location).body(operationDtoSaved);
     }
 
-    @RequestMapping(value = "", method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
+    @ApiOperation("get all operations")
+    @GetMapping(path = "/v1/operations")
     public ResponseEntity<List<OperationDto>> findAll() {
-        List<OperationDto> operationDtos = operationService.findAll();
-        HttpStatus status = (operationDtos != null) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE;
-        return new ResponseEntity<>(operationDtos, status);
+        log.info("get all operations");
+        List<OperationDto> operationsDto = operationService.findAll();
+        return ResponseEntity.ok().body(operationsDto);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
+    @ApiOperation("get operation by id")
+    @GetMapping(path = "/v1/operations/{id}")
     public ResponseEntity<OperationDto> findById(@PathVariable Long id) throws OperationNotFoundException {
+        log.info("get operation by id : {} ", id);
         OperationDto operationDto = operationService.findById(id);
-        HttpStatus status = (operationDto != null) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE;
-        return new ResponseEntity<>(operationDto, status);
+        return ResponseEntity.ok().body(operationDto);
 
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Object> deleteById(@PathVariable Long id) throws OperationNotFoundException {
+    @ApiOperation("delete operation by id")
+    @DeleteMapping(path = "/v1/operations/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Long id) throws OperationNotFoundException {
         operationService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 }

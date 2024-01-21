@@ -9,7 +9,6 @@ import org.example.chapitre1.exception.AccountNotFoundException;
 import org.example.chapitre1.exception.UserNotFoundException;
 import org.example.chapitre1.repository.AccountRepository;
 import org.example.chapitre1.repository.UserRepository;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,10 +41,7 @@ public class AccountService {
     }
 
     public void deleteById(Long id) throws AccountNotFoundException {
-        try {
-            accountRepository.deleteById(id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new AccountNotFoundException();
-        }
+        Account account = accountRepository.findById(id).orElseThrow(AccountNotFoundException::new);
+        accountRepository.deleteById(account.getId());
     }
 }
